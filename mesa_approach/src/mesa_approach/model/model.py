@@ -77,19 +77,7 @@ class OptimalRectanglePackingModel(Model):
         """
         self.agents.shuffle_do("step")
 
-    def check_overlap(self, rect1, rect2):
-        """Check if two rectangles overlap."""
-        x1_min = rect1.position[0] - rect1.width / 2
-        x1_max = rect1.position[0] + rect1.width / 2
-        y1_min = rect1.position[1] - rect1.height / 2
-        y1_max = rect1.position[1] + rect1.height / 2
 
-        x2_min = rect2.position[0] - rect2.width / 2
-        x2_max = rect2.position[0] + rect2.width / 2
-        y2_min = rect2.position[1] - rect2.height / 2
-        y2_max = rect2.position[1] + rect2.height / 2
-
-        return not (x1_max <= x2_min or x1_min >= x2_max or y1_max <= y2_min or y1_min >= y2_max)
     
     def spawn_rectangle(self):
         while True:
@@ -97,6 +85,6 @@ class OptimalRectanglePackingModel(Model):
             rect_height = self.rng.integers(5, 20)
             rect_width = self.rng.integers(5, 20)
             new_rect = Rectangle(self, self.space, position=position, height=rect_height, width=rect_width)
-            overlap = any(self.check_overlap(new_rect, agent) for agent in self.agents if new_rect != agent)
+            overlap = any(new_rect.check_overlap(agent) for agent in self.agents if new_rect != agent)
             if not overlap:
                 return new_rect
