@@ -4,6 +4,14 @@
 
 ## Nutzung von Poetry 
 * ggf. Poetry installieren
-* poetry install zur Auflösung aller Abhängigkeiten
+* `poetry install` zur Auflösung aller Abhängigkeiten
+  
+## Code ausführen
+* navigieren in `simulation_weak_emergence/mesa_approach/src/mesa_approach`
+* `poetry run solara run app`
 
-Danach kann man durchs Navigieren in simulation_weak_emergence/mesa_approach/src/mesa_approach die Skripte mit 'poetry run solara run app' ausführen.
+## Simulation im Browser betrachten
+* Es sollte sich ein Port öffnen, auf dem die Simulation zu sehen ist!
+
+## Debuggen
+* launch.json anpassen nach Poetry Tutorial
