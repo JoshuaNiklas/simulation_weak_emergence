@@ -1,8 +1,4 @@
-"""
-Solara-based visualization for the Spatial Prisoner's Dilemma Model.
-"""
-
-from mesa.examples.advanced.pd_grid.model import PdGrid
+from mesa_approach.model.model import RectangleOptimizationModel
 from mesa.visualization import (
     Slider,
     SolaraViz,
@@ -12,12 +8,10 @@ from mesa.visualization import (
 from mesa.visualization.components import AgentPortrayalStyle
 
 
-def pd_agent_portrayal(agent):
-    """
-    Portrayal function for rendering PD agents in the visualization.
-    """
+def agent_portrayal(agent):
+
     return AgentPortrayalStyle(
-        color="blue" if agent.move == "C" else "red", marker="s", size=25
+        color="red", marker="s", size=agent.width * agent.height
     )
 
 
@@ -28,31 +22,18 @@ model_params = {
         "value": 42,
         "label": "Random Seed",
     },
-    "width": Slider("Grid Width", value=50, min=10, max=100, step=1),
-    "height": Slider("Grid Height", value=50, min=10, max=100, step=1),
-    "activation_order": {
-        "type": "Select",
-        "value": "Random",
-        "values": PdGrid.activation_regimes,
-        "label": "Activation Regime",
-    },
 }
 
-
-# Create plot for tracking cooperating agents over time
-plot_component = make_plot_component("Cooperating_Agents", backend="altair", grid=True)
-
 # Initialize model
-initial_model = PdGrid()
+initial_model = RectangleOptimizationModel(width=10, height=10, population_size=1)
 # Create grid and agent visualization component using Altair
-renderer = SpaceRenderer(initial_model, backend="altair").render(pd_agent_portrayal)
+renderer = SpaceRenderer(initial_model, backend="matplotlib").render(agent_portrayal)
 
 # Create visualization with all components
 page = SolaraViz(
     model=initial_model,
     renderer=renderer,
-    components=[plot_component],
     model_params=model_params,
-    name="Spatial Prisoner's Dilemma",
+    name="Rectangle Space Optiomization Model",
 )
 page  # noqa B018
