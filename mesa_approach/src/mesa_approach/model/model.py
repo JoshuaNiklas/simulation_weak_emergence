@@ -1,90 +1,69 @@
-"""
-Optimal Rectangle Packing Model
-===================
-A Mesa implementation of Optimal Rectangle Packing Problem as proposed by Richard E. Korf, e.g. https://arxiv.org/pdf/1402.0557
-Uses Mesa as a means for Multi-Agent-System
-"""
-
-import os
-import sys
-
-#Get the fourth-top most directory and resolve from there
-sys.path.insert(0, os.path.abspath("../../../.."))
+import mesa
+from mesa.discrete_space import OrthogonalMooreGrid
+from mesa.examples.advanced.pd_grid.agents import PDAgent
 
 
-import numpy as np
+class PdGrid(mesa.Model):
+    """Model class for iterated, spatial prisoner's dilemma model."""
 
-from mesa import Model
-from mesa_approach.agents.agents import Rectangle
-from mesa.experimental.continuous_space import ContinuousSpace
+    activation_regimes = ["Sequential", "Random", "Simultaneous"]
 
+    # This dictionary holds the payoff for this agent,
+    # keyed on: (my_move, other_move)
 
-class OptimalRectanglePackingModel(Model):
-    """Optimal Rectangle Packing Model class. Handles agent creation, placement and scheduling."""
+    payoff = {("C", "C"): 1, ("C", "D"): 0, ("D", "C"): 1.6, ("D", "D"): 0}
 
     def __init__(
-        self,
-        population_size=5,
-        width=100,
-        height=100,
-        speed=1,
-        vision=10,
-        separation=2,
-        cohere=0.03,
-        separate=0.015,
-        match=0.05,
-        seed=None,
+        self, width=50, height=50, activation_order="Random", payoffs=None, seed=None
     ):
-        """Create a new Optimal Rectangle Packing Model.
+        """
+        Create a new Spatial Prisoners' Dilemma Model.
 
         Args:
-            population_size: Number of Rectangles in the simulation (default: 5)
-            width: Width of the space (default: 100)
-            height: Height of the space (default: 100)
-            speed: How fast the Boids move (default: 1)
-            vision: How far each Boid can see (default: 10)
-            separation: Minimum distance between Boids (default: 2)
-            cohere: Weight of cohesion behavior (default: 0.03)
-            separate: Weight of separation behavior (default: 0.015)
-            match: Weight of alignment behavior (default: 0.05)
-            seed: Random seed for reproducibility (default: None)
+            width, height: Grid size. There will be one agent per grid cell.
+            activation_order: Can be "Sequential", "Random", or "Simultaneous".
+                           Determines the agent activation regime.
+            payoffs: (optional) Dictionary of (move, neighbor_move) payoffs.
         """
         super().__init__(seed=seed)
-        self.agent_angles = np.zeros(
-            population_size
-        )  # holds the angle representing the direction of all agents at a given step
+        self.activation_order = activation_order
+        self.grid = OrthogonalMooreGrid((width, height), torus=True, random=self.random)
 
-        # Set up the space
-        self.space = ContinuousSpace(
-            [[0, width], [0, height]],
-            torus=False,
-            random=self.random,
-            n_agents=population_size,
+        if payoffs is not None:
+            self.payoff = payoffs
+
+        PDAgent.create_agents(
+            self, len(self.grid.all_cells.cells), cell=self.grid.all_cells.cells
         )
 
-        # Create and place the Boid agents
-        
+        self.datacollector = mesa.DataCollector(
+            {
+                "Cooperating_Agents": lambda m: len(
+                    [a for a in m.agents if a.move == "C"]
+                )
+            }
+        )
 
-        for i in range(population_size):
-            rectangle = self.spawn_rectangle()
-            rectangle.speed = speed
-            self.agents.add(rectangle)
+        self.running = True
+        self.datacollector.collect(self)
 
     def step(self):
-        """Run one step of the model.
+        # Activate all agents, based on the activation regime
+        match self.activation_order:
+            case "Sequential":
+                self.agents.do("step")
+            case "Random":
+                self.agents.shuffle_do("step")
+            case "Simultaneous":
+                self.agents.do("step")
+                self.agents.do("advance")
+            case _:
+                raise ValueError(f"Unknown activation order: {self.activation_order}")
 
-        All agents are activated in random order using the AgentSet shuffle_do method.
-        """
-        self.agents.shuffle_do("step")
+        # Collect data
+        self.datacollector.collect(self)
 
-
-    
-    def spawn_rectangle(self):
-        while True:
-            position = self.rng.random(size=2) * np.array([self.space.x_max, self.space.y_max])
-            rect_height = self.rng.integers(5, 20)
-            rect_width = self.rng.integers(5, 20)
-            new_rect = Rectangle(self, self.space, position=position, height=rect_height, width=rect_width)
-            overlap = any(new_rect.check_overlap(agent) for agent in self.agents if new_rect != agent)
-            if not overlap:
-                return new_rect
+    def run(self, n):
+        """Run the model for n steps."""
+        for _ in range(n):
+            self.step()
